@@ -8,7 +8,7 @@ app = Flask(__name__)
 # Path to your Firebase Admin SDK credentials JSON file
 cred = credentials.Certificate('global-item-count-firebase-adminsdk-fbsvc-53082b4254.json')
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://global-item-count-default-rtdb.europe-west1.firebasedatabase.app/'  # Replace with your Firebase database URL
+    'databaseURL': 'https://global-item-default-rtdb.europe-west1.firebasedatabase.app/'  # Replace with your Firebase database URL
 })
 
 # Function to get the current global item count
