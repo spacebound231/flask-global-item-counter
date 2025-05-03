@@ -13,7 +13,7 @@ mongo_uri = os.getenv("MONGO_URI")
 
 # Connect to MongoDB
 client = MongoClient(mongo_uri)
-db = client.get_database()  # Works because DB name is in URI
+db = client["sample_mflix"]
 collection = db.items  # Use 'items' collection
 
 # GET item count
