@@ -6,7 +6,7 @@ from flask import Flask, jsonify, request
 app = Flask(__name__)
 
 # Path to your Firebase Admin SDK credentials JSON file
-cred = credentials.Certificate('global-item-firebase-adminsdk-fbsvc-d0a37e65a7.json')
+cred = credentials.Certificate('global-item-firebase-adminsdk-fbsvc-cb8e62f534.json')
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://global-item-default-rtdb.europe-west1.firebasedatabase.app/'  # Replace with your Firebase database URL
 })
