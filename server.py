@@ -30,10 +30,15 @@ def get_count():
 # Route to increment the global item count
 @app.route('/increment_item_count', methods=['POST'])
 def increment_count():
-    current_count = get_item_count()
-    new_count = current_count + 1
-    set_item_count(new_count)  # Update Firebase with the new count
-    return jsonify({'new_count': new_count})
+    try:
+        current_count = get_item_count()
+        new_count = current_count + 1
+        set_item_count(new_count)
+        return jsonify({'new_count': new_count})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 # Route for the root URL (optional)
 @app.route('/')
