@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
@@ -16,29 +16,37 @@ client = MongoClient(mongo_uri)
 db = client["sample_mflix"]
 collection = db.items  # Use 'items' collection
 
-# POST route to update or insert an item count
+# POST to update item count and mutation
 @app.route('/update_item_count', methods=['POST'])
 def update_item_count():
-    data = request.get_json()  # Get the item name and count from the request
-    item_name = data.get('name')
-    item_count = data.get('count')
+    data = request.get_json()
+    
+    if not data or 'name' not in data or 'count' not in data:
+        return jsonify({"error": "Missing required fields"}), 400
 
-    if item_name and item_count is not None:
-        # Try to find the item in the database
-        item = collection.find_one({"name": item_name})
-        if item:
-            # If the item exists, update its count
-            collection.update_one({"name": item_name}, {'$inc': {'count': item_count}})
-        else:
-            # If the item doesn't exist, create a new entry
-            collection.insert_one({"name": item_name, "count": item_count})
+    item_name = data['name']
+    count = data['count']
+    mutation = data.get('mutation', "No mutation")  # Default to "No mutation" if not provided
 
-        # Fetch the updated item to confirm
-        updated_item = collection.find_one({"name": item_name})
-        return jsonify({"name": updated_item["name"], "new_count": updated_item["count"]}), 200
+    # Update the item in the database
+    result = collection.update_one(
+        {"name": item_name},  # Filter by item name
+        {
+            "$inc": {"count": count},  # Increment the count field
+            "$set": {"mutation": mutation}  # Set the mutation value
+        },
+        upsert=True  # If the item does not exist, it will be created
+    )
+    
+    if result.modified_count > 0:
+        return jsonify({"message": "Item count and mutation updated successfully"})
     else:
-        return jsonify({"error": "Invalid data"}), 400
+        return jsonify({"message": "Item already up to date or created"}), 200
 
-# Run the app
+# Home route
+@app.route('/')
+def home():
+    return "MongoDB Item Counter is running."
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
