@@ -1,52 +1,59 @@
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from dotenv import load_dotenv
-import os
 
 # Load environment variables from .env
 load_dotenv()
 
+# Initialize Flask app
 app = Flask(__name__)
 
-# Get Mongo URI from .env
+# Get Mongo URI from environment
 mongo_uri = os.getenv("MONGO_URI")
 
 # Connect to MongoDB
 client = MongoClient(mongo_uri)
-db = client["sample_mflix"]
-collection = db.items  # Use 'items' collection
-
-# POST to update item count and mutation
-@app.route('/update_item_count', methods=['POST'])
-def update_item_count():
-    data = request.get_json()
-    
-    if not data or 'name' not in data or 'count' not in data:
-        return jsonify({"error": "Missing required fields"}), 400
-
-    item_name = data['name']
-    count = data['count']
-    mutation = data.get('mutation', "No mutation")  # Default to "No mutation" if not provided
-
-    # Update the item in the database
-    result = collection.update_one(
-        {"name": item_name},  # Filter by item name
-        {
-            "$inc": {"count": count},  # Increment the count field
-            "$set": {"mutation": mutation}  # Set the mutation value
-        },
-        upsert=True  # If the item does not exist, it will be created
-    )
-    
-    if result.modified_count > 0:
-        return jsonify({"message": "Item count and mutation updated successfully"})
-    else:
-        return jsonify({"message": "Item already up to date or created"}), 200
+db = client["sample_mflix"]           # Replace with your DB name if different
+collection = db.items                 # 'items' collection
 
 # Home route
 @app.route('/')
 def home():
-    return "MongoDB Item Counter is running."
+    return "✅ MongoDB Item Counter is running."
 
+# (Optional) Get total count from the first item found
+@app.route('/get_item_count', methods=['GET'])
+def get_item_count():
+    doc = collection.find_one({})
+    count = doc['count'] if doc else 0
+    return jsonify({"count": count})
+
+# ✅ Handle batch updates from Roblox
+@app.route('/increment_item_count', methods=['POST'])
+def increment_item_count():
+    data = request.get_json()
+
+    if not isinstance(data, list):
+        return jsonify({"error": "Expected a list of items"}), 400
+
+    for item in data:
+        name = item.get('name')
+        count = item.get('count', 0)
+        mutation = item.get('mutation', "none")
+
+        if name:
+            collection.update_one(
+                {"name": name},
+                {
+                    "$inc": {"count": count},
+                    "$set": {"mutation": mutation}
+                },
+                upsert=True
+            )
+
+    return jsonify({"message": "Batch update successful"}), 200
+
+# Run app on Render or locally
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
