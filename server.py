@@ -1,7 +1,7 @@
-import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from dotenv import load_dotenv
+import os
 
 # Load environment variables from .env
 load_dotenv()
@@ -16,24 +16,29 @@ client = MongoClient(mongo_uri)
 db = client["sample_mflix"]
 collection = db.items  # Use 'items' collection
 
-# GET item count
-@app.route('/get_item_count', methods=['GET'])
-def get_item_count():
-    doc = collection.find_one({})
-    count = doc['count'] if doc else 0
-    return jsonify({"count": count})
+# POST route to update or insert an item count
+@app.route('/update_item_count', methods=['POST'])
+def update_item_count():
+    data = request.get_json()  # Get the item name and count from the request
+    item_name = data.get('name')
+    item_count = data.get('count')
 
-# POST to increment item count
-@app.route('/increment_item_count', methods=['POST'])
-def increment_item_count():
-    collection.update_one({}, {'$inc': {'count': 1}}, upsert=True)
-    doc = collection.find_one({})
-    return jsonify({"new_count": doc['count']})
+    if item_name and item_count is not None:
+        # Try to find the item in the database
+        item = collection.find_one({"name": item_name})
+        if item:
+            # If the item exists, update its count
+            collection.update_one({"name": item_name}, {'$inc': {'count': item_count}})
+        else:
+            # If the item doesn't exist, create a new entry
+            collection.insert_one({"name": item_name, "count": item_count})
 
-# Home route
-@app.route('/')
-def home():
-    return "MongoDB Item Counter is running."
+        # Fetch the updated item to confirm
+        updated_item = collection.find_one({"name": item_name})
+        return jsonify({"name": updated_item["name"], "new_count": updated_item["count"]}), 200
+    else:
+        return jsonify({"error": "Invalid data"}), 400
 
+# Run the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
