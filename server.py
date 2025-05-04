@@ -22,12 +22,11 @@ collection = db.items                 # 'items' collection
 def home():
     return "✅ MongoDB Item Counter is running."
 
-# (Optional) Get total count from the first item found
-@app.route('/get_item_count', methods=['GET'])
-def get_item_count():
-    doc = collection.find_one({})
-    count = doc['count'] if doc else 0
-    return jsonify({"count": count})
+@app.route('/get_all_item_counts', methods=['GET'])
+def get_all_item_counts():
+    all_items = collection.find({})
+    results = {doc['name']: doc.get('count', 0) for doc in all_items}
+    return jsonify(results)
 
 # ✅ Handle batch updates from Roblox
 @app.route('/increment_item_count', methods=['POST'])
